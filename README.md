@@ -1,4 +1,4 @@
-# rearrangeRepos
+# rearrangeRepositories
 Este es un script en bash que se ha realizado para poder reorganizar todos los repositorios de GitHub que compartan una parte del nombre en un solo repositorio. El objetivo principal era reorganizar todos los laboratorios realizados durante el bootcamp de IronHack (todos comienzan por "lab") en un solo repositorio estructurado en carpetas.
 ***
 
