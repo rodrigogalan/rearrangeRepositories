@@ -13,7 +13,7 @@ endColour="\033[0m\e[0m"
 trap crtl_c INT
 
 function crtl_c(){
-	echo -e "\n\n${redColour}[!] Saliendo...${endColour}"
+	echo -e "\n\n${redColour}[!] Ending...${endColour}"
 	tput cnorm
 	exit 1
 }
@@ -55,16 +55,16 @@ function dependencies(){
 	clear
 	dependencies=(curl jq)
 
-	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Comprobando los programas necesarios...${endColour}"
+	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Checking the required programs...${endColour}"
 	
 	for program in "${dependencies[@]}"; do
-		echo -ne "\n${yellowColour}[*]${endColour} Herramienta${blueColour} $program${endColour}..."
+		echo -ne "\n${yellowColour}[*]${endColour} Tool${blueColour} $program${endColour}..."
 
 		if [ -f /usr/bin/$program ]; then
 			echo -e " ${greenColour}(V)${endColour}"
 		else
 			echo -e " ${redColour}(X)${endColour}\n"
-			echo -e "${yellowColour}[*]${endColour} Instalando herramienta ${blueColour}$program${endColour}..."
+			echo -e "${yellowColour}[*]${endColour} Instaling tool ${blueColour}$program${endColour}..."
 			tput cnorm
 			sudo apt-get install $program -y > /dev/null 2>&1
 			tput civis
@@ -80,9 +80,9 @@ function getCredentials(){
 	USERNAME=$(cat $CONFIGFILE 2> /dev/null | jq -r ".username" 2> /dev/null )
 	TOKEN=$(cat $CONFIGFILE 2> /dev/null | jq -r ".token" 2> /dev/null )
 	if [ -z $USERNAME ] && [ -z $TOKEN ]; then
-		echo -e "${redColour}[X]${endColour} Algo ha fallado al leer las credenciales."
-		echo -e "\n${yellowColour}[*]${endColour} Comprueba que el archivo indicado existe y tiene la estructura correcta."
-		echo -e "\n${yellowColour}[*]${endColour} Para ver el panel de ayuda utiliza la opción -h.\n"
+		echo -e "${redColour}[X]${endColour} Something has gone wrong in reading the credentials."
+		echo -e "\n${yellowColour}[*]${endColour} Check that the indicated file exists and has the correct structure."
+		echo -e "\n${yellowColour}[*]${endColour} To view the help panel use the -h option.\n"
 		exit 1
 	fi	
 }
@@ -90,7 +90,7 @@ function getCredentials(){
 # Function to obtain all the repositories beginning with the COMMON_STRING variable from the user account
 function getRepositories(){
 	MORE_RESULTS="?page=1&per_page=100"
-	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Se están realizando las peticiones a la API de GitHub...${endColour}"
+	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} GitHub API requests are being performed......${endColour}"
 	while read repo; do
 		REPOSITORIES_TO_REARRANGE=( "${REPOSITORIES_TO_REARRANGE[@]}" "$repo")
 	done < <(curl -s \
@@ -101,7 +101,7 @@ function getRepositories(){
 	jq -r ".[] | .name" 2> /dev/null|
 	grep $COMMON_STRING)
 	if [ ${#REPOSITORIES_TO_REARRANGE[@]} -eq 0 ]; then 
-		echo "Ha habido un problema con la petición a la api de GitHub: "
+		echo "There has been a problem with the request to the GitHub api: "
 		curl \
         	-H "Accept: application/vnd.github+json" \
         	-H "Authorization: Bearer $TOKEN" \
@@ -110,7 +110,7 @@ function getRepositories(){
 		exit 1
 	fi
 
-	echo -e "\nLos repositorios que se van a reordenar son:\n"
+	echo -e "\nThe repositories to be rearranged are:\n"
 	for repo in "${REPOSITORIES_TO_REARRANGE[@]}"; do
 		echo -e "\t$repo";
 	done
@@ -154,7 +154,7 @@ function checkSubarray(){
 	# Check if the arrays contains only integer numbers
 	for e in "${SUBARRAY[@]}"; do
 		if ! [[ $e =~ ^[0-9]+$ ]]; then
-			echo -e "${redColour}[!]${endColour} Todos los caracteres deben ser números enteros separados por espacios."
+			echo -e "${redColour}[!]${endColour} All characters must be integers separated by spaces."
    			return 1
 		fi
 	done
@@ -162,7 +162,7 @@ function checkSubarray(){
 	# Check if that numbers correspond with the index in the array
 	for index in "${SUBARRAY[@]}"; do
 		if ! [ ${ARRAY[$index]} ]; then
-			echo -e "${redColour}[!]${endColour} Los posibles números a introducir son: ${!REPOSITORIES_RENAMED_COPY[@]}"
+			echo -e "${redColour}[!]${endColour} The possible numbers to enter are: ${!REPOSITORIES_RENAMED_COPY[@]}"
 			return 1			
 		fi
 	done
@@ -174,7 +174,7 @@ function createJson(){
 	unset REPOSITORY_STRUCTURE
 	declare -gA REPOSITORY_STRUCTURE
 	echo
-	echo "La lista de repositorios numerada es:"
+	echo "The numbered list of repositories is:"
 	echo
 	for repo in "${!REPOSITORIES_RENAMED[@]}"; do
 		echo -e "\t$repo ${REPOSITORIES_RENAMED[$repo]}"
@@ -185,46 +185,46 @@ function createJson(){
 			echo
 			read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter the numbers associated with the repositories corresponding with the week ${week}: ${endColour}")" -a repos
 
-			# Comandos para verificar si las variables introducidas son o no correctas
+			# Commands to verify whether the variables entered are correct or not
 			checkSubarray repos REPOSITORIES_RENAMED_COPY
 			while (( $? )); do
 				read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter from the beginning again the numbers associated with week ${week}: ${endColour}")" -a repos
 				checkSubarray repos REPOSITORIES_RENAMED_COPY
 			done
 
-			# Bucle para ir eliminando los repositorios ya seleccionados
+			# Loop to remove already selected repositories
 			for repo in "${repos[@]}"; do 
 				unset -v 'REPOSITORIES_RENAMED_COPY[$repo]'
 			done
 
-			# Comandos para añadir los repositorios seleccionados a la estructura
+			# Commands to add the selected repositories to the structure
 			[[ -v REPOSITORY_STRUCTURE[semana_$week] ]] && REPOSITORY_STRUCTURE[semana_$week]+=" ${repos[@]}"
 			[[ -v REPOSITORY_STRUCTURE[semana_$week] ]] || REPOSITORY_STRUCTURE[semana_$week]=${repos[@]}
 
-			# Condicionales para comprobar si el proceso ha terminado o no
+			# Conditionals to check if the process has finished
 			if [ ${#REPOSITORIES_RENAMED_COPY[@]} -gt 0 ]; then
 				if [ $week != 7 ]; then
-					echo "Los repositorios restantes son: "
+					echo "The remaining repositories are: "
 					for index in ${!REPOSITORIES_RENAMED_COPY[@]}; do 
 						echo -n "$index  "
 					done
 				fi
 			else
-				echo "No hay repositorios restantes"
+				echo "There are no remaining repositories"
 				break
 			fi
 		done
 
-		# Bucle para volver a recorrer el array si faltan repositorios o para terminarlo sino faltan
+		# Loop to loop back through the array if there are missing repositories or to terminate if there are not.
 		if [ ${#REPOSITORIES_RENAMED_COPY[@]} -gt 0 ]; then
 			echo 
-			echo "Los repositorios restantes por añadir a la estructura son: "
+			echo "The remaining repositories to be added to the structure are: "
 			for index in ${!REPOSITORIES_RENAMED_COPY[@]}; do 
 				echo -n "$index  "
 			done
 		else
 			clear
-			echo -e "${yellowColour}[*]${endColour}${turquoiseColour} La estructura es:${endColour}"
+			echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is:${endColour}"
 			for ((week=1; week<=7; week++)); do
 				echo -e "\tsemana_$week →  "
 				for e in ${REPOSITORY_STRUCTURE[semana_$week]}; do
@@ -238,10 +238,10 @@ function createJson(){
 
 # Function to create the new repository to store the other ones
 function createRepository(){
-	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Se va a crear un nuevo repositorio donde almacenar el resto${endColour}"
-	read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Introduce un nombre para el nuevo repositorio: ${endColour}")" NEW_REPOSITORY_NAME
+	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} A new repository will be created to store the remaining${endColour}"
+	read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter a name for the new repository: ${endColour}")" NEW_REPOSITORY_NAME
 	NEW_REPOSITORY_NAME=$(echo ${NEW_REPOSITORY_NAME} | sed 's/ /_/g')
-	read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Introduce la descripción del nuevo repositoriorio: ${endColour}")" NEW_REPOSITORY_DESCRIPTION
+	read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter the description for the new repository: ${endColour}")" NEW_REPOSITORY_DESCRIPTION
 	curl -s \
   	-X POST \
   	-H "Accept: application/vnd.github+json" \
@@ -256,13 +256,13 @@ function donwloadRepositories(){
 	cd ${0%/*}; cd ..
 	git clone https://github.com/${USERNAME}/${NEW_REPOSITORY_NAME} &> /dev/null
 	cd ${NEW_REPOSITORY_NAME}
-	echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Se van a descargar todos los repositorios siguiendo la estructura de carpetas elegida en la ruta $(pwd)${endColour}"
+	echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} All the repositories will be downloaded following the chosen folder structure in the path $(pwd)${endColour}"
 	echo
 	for ((week=1; week<=7; week++)); do
 		mkdir semana_$week; cd semana_$week
 		echo -e "${turquoiseColour}semana_${week}${endColour}"
 		for e in ${REPOSITORY_STRUCTURE[semana_$week]}; do
-			echo -e "\tdescargando ${REPOSITORIES_RENAMED[${e}]}..."
+			echo -e "\tdownloading ${REPOSITORIES_RENAMED[${e}]}..."
 			git clone  https://github.com/${USERNAME}/${REPOSITORIES_RENAMED[${e}]} &> /dev/null
 		done
 		echo
@@ -272,11 +272,11 @@ function donwloadRepositories(){
 
 # Function to upload the repository
 function uploadRepository(){
-	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Se van a eliminar todos los registros de git de los repositorios...${endColour}"
+	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
 	find -type d -path "./*/*/.git" -exec rm -rf {} +
 	git add -A 
 	git commit -m "Initial commit" > /dev/null
-	echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Se va a subir el repositorio total a la cuenta de GitHub...${endColour}"
+	echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} The total repository will be uploaded to the GitHub account...${endColour}"
 	git push &> /dev/null
 	clear
 }
