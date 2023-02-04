@@ -24,7 +24,7 @@ Con esto ya tendriamos el script en local con permisos de ejecución y el archiv
 - Parámetro -s string: permite modificar el string que comparten todos los repositorios, por defecto tiene el valor "lab"
 - Parámetro -f filename: permite modificar la ruta del archivo de credenciales, por defecto vale "./config.json". Puede ponerse la ruta relativa o absoluta.
 - Parámetro -n number_of_folders: permite modificar el número de carpetas que se van a crear en la estrucutura. El número por defecto es 7.
-- Parámetro -c name_of_folders: permite modificar el nombre de las carpetas que se van a crear en la estrucutura. El nombre por defecto es "week".
+- Parámetro -c name_of_folders: permite modificar el nombre de las carpetas que se van a crear en la estrucutura (no puede contener espacios). El nombre por defecto es "week".
 
 Por ejemplo para ejecutar la herramienta y hacerla actuar sobre los repositorios que contengan el string "python" en el nombre y el archivo de credenciales esté en la ruta "~/credentials.json", con 10 carpetas en la estructura y con nombre "custom_name" el comando es:
 ```
