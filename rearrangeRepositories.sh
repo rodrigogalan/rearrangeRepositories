@@ -46,6 +46,13 @@ OPTIONS
 	
 	   Select the common string between all the GitHub repositories.
 
+	○  -n number_of_folders:
+
+	   Enter the number of folders desired to rearrange the repositories. The default number is 7.
+
+	○  -c folder_names:
+
+	   Customize folder names. The default name is \"week\".
 "
 	exit 0
 }
@@ -181,14 +188,14 @@ function createJson(){
 	done
 	REPOSITORIES_RENAMED_COPY=("${REPOSITORIES_RENAMED[@]}")
 	while [ ${#REPOSITORIES_RENAMED_COPY[@]} -gt 0 ]; do
-		for (( week=1; week<=7; week++ )); do
+		for (( folder=1; folder<=${NUMBER_OF_FOLDERS}; folder++ )); do
 			echo
-			read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter the numbers associated with the repositories corresponding with the week ${week}: ${endColour}")" -a repos
+			read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter the numbers associated with the repositories corresponding with the folder ${folder}: ${endColour}")" -a repos
 
 			# Commands to verify whether the variables entered are correct or not
 			checkSubarray repos REPOSITORIES_RENAMED_COPY
 			while (( $? )); do
-				read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter from the beginning again the numbers associated with week ${week}: ${endColour}")" -a repos
+				read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter from the beginning again the numbers associated with folder ${folder}: ${endColour}")" -a repos
 				checkSubarray repos REPOSITORIES_RENAMED_COPY
 			done
 
@@ -198,12 +205,12 @@ function createJson(){
 			done
 
 			# Commands to add the selected repositories to the structure
-			[[ -v REPOSITORY_STRUCTURE[semana_$week] ]] && REPOSITORY_STRUCTURE[semana_$week]+=" ${repos[@]}"
-			[[ -v REPOSITORY_STRUCTURE[semana_$week] ]] || REPOSITORY_STRUCTURE[semana_$week]=${repos[@]}
+			[[ -v REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder] ]] && REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]+=" ${repos[@]}"
+			[[ -v REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder] ]] || REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]=${repos[@]}
 
 			# Conditionals to check if the process has finished
 			if [ ${#REPOSITORIES_RENAMED_COPY[@]} -gt 0 ]; then
-				if [ $week != 7 ]; then
+				if [ $folder != ${NUMBER_OF_FOLDERS} ]; then
 					echo "The remaining repositories are: "
 					for index in ${!REPOSITORIES_RENAMED_COPY[@]}; do 
 						echo -n "$index  "
@@ -225,9 +232,9 @@ function createJson(){
 		else
 			clear
 			echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is:${endColour}"
-			for ((week=1; week<=7; week++)); do
-				echo -e "\tsemana_$week →  "
-				for e in ${REPOSITORY_STRUCTURE[semana_$week]}; do
+			for ((folder=1; folder<=${NUMBER_OF_FOLDERS}; folder++)); do
+				echo -e "\t${FOLDER_NAMES}_$folder →  "
+				for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do
 					echo -e "\t\t${REPOSITORIES_RENAMED[${e}]}"
 				done
 				echo
@@ -258,10 +265,10 @@ function donwloadRepositories(){
 	cd ${NEW_REPOSITORY_NAME}
 	echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} All the repositories will be downloaded following the chosen folder structure in the path $(pwd)${endColour}"
 	echo
-	for ((week=1; week<=7; week++)); do
-		mkdir semana_$week; cd semana_$week
-		echo -e "${turquoiseColour}semana_${week}${endColour}"
-		for e in ${REPOSITORY_STRUCTURE[semana_$week]}; do
+	for ((folder=1; folder<=${NUMBER_OF_FOLDERS}; folder++)); do
+		mkdir ${FOLDER_NAMES}_$folder; cd ${FOLDER_NAMES}_$folder
+		echo -e "${turquoiseColour}${FOLDER_NAMES}_${folder}${endColour}"
+		for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do
 			echo -e "\tdownloading ${REPOSITORIES_RENAMED[${e}]}..."
 			git clone  https://github.com/${USERNAME}/${REPOSITORIES_RENAMED[${e}]} &> /dev/null
 		done
@@ -273,6 +280,8 @@ function donwloadRepositories(){
 # Function to upload the repository
 function uploadRepository(){
 	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
+	echo "El directorio actual es $(pwd)"
+	sleep 5
 	find -type d -path "./*/*/.git" -exec rm -rf {} +
 	git add -A 
 	git commit -m "Initial commit" > /dev/null
@@ -307,11 +316,15 @@ function removeRepositories(){
 # Main function
 COMMON_STRING="lab"
 CONFIGFILE="./config.json"
-while getopts "hf:s:" arg; do
+NUMBER_OF_FOLDERS=7
+FOLDER_NAMES="week"
+while getopts "hf:s:n:c:" arg; do
 	case "${arg}" in
 		h) helpPanel ;;
 		f) CONFIGFILE=$OPTARG ;; 
 		s) COMMON_STRING=$OPTARG ;;
+		n) NUMBER_OF_FOLDERS=$OPTARG ;;
+		c) FOLDER_NAMES=$OPTARG ;;
 	esac
 done
 dependencies
