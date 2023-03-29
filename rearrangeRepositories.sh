@@ -13,50 +13,43 @@ endColour="\033[0m\e[0m"
 trap crtl_c INT
 
 function crtl_c(){
-	echo -e "\n\n${redColour}[!] Ending...${endColour}"
+	err Ending...
 	tput cnorm
 	exit 1
 }
 
+function err(){
+	echo -e "[$(date +"%m-%d-%Y %H:%M:%S")]: ${redColour}$*${endColour}" >&2
+}
+
+# Function to print the help
 function helpPanel(){
 	echo -n "
 SYNOPSIS
-	$0 [SHORT-OPTION]...
- 	$0 LONG-OPTION
+	$(basename $0) [OPTION]...
 
 DESCRIPTION
 	Rearrange all GitHub repositories that share X characters into one repository.
+	GITHUB_USERNAME/GITHUB_TOKEN must be set via environment variables
 
 OPTIONS
 	○  -h:
-
-	   Display the help pannel.
-
-	○  -f filename:
-	
-	   Select the JSON file with the github account username and token. The defaul value is \"./config.json\". The JSON structure must be:
-
-	   {  
-	  	   \"username\": \"jonh_doe\"
-		   \"token\": \"github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"
-	   }
-
+		Display the help pannel.
 
 	○  -s string:
-	
-	   Select the common string between all the GitHub repositories.
+		Select the common string between all the GitHub repositories.
 
 	○  -n number_of_folders:
-
-	   Enter the number of folders desired to rearrange the repositories. The default number is 7.
+		Enter the number of folders desired to rearrange the repositories. The default number is 7.
 
 	○  -c folder_names:
+		Customize folder names. The default name is \"week\".
 
-	   Customize folder names. The default name is \"week\".
 "
 	exit 0
 }
 
+# Function to check for necessary dependencies
 function dependencies(){
 	tput civis
 	clear
@@ -74,6 +67,10 @@ function dependencies(){
 			echo -e "${yellowColour}[*]${endColour} Instaling tool ${blueColour}$program${endColour}..."
 			tput cnorm
 			sudo apt-get install $program -y > /dev/null 2>&1
+			if [ $? -ne 0 ]; then
+				err "The dependencie $program is necessary"
+				exit 1
+			fi
 			tput civis
 		fi
 		sleep 1
@@ -84,14 +81,17 @@ function dependencies(){
 
 # Function to get the github account credentials from config file
 function getCredentials(){
-	USERNAME=$(cat $CONFIGFILE 2> /dev/null | jq -r ".username" 2> /dev/null )
-	TOKEN=$(cat $CONFIGFILE 2> /dev/null | jq -r ".token" 2> /dev/null )
-	if [ -z $USERNAME ] && [ -z $TOKEN ]; then
-		echo -e "${redColour}[X]${endColour} Something has gone wrong in reading the credentials."
-		echo -e "\n${yellowColour}[*]${endColour} Check that the indicated file exists and has the correct structure."
-		echo -e "\n${yellowColour}[*]${endColour} To view the help panel use the -h option.\n"
+	if [ -z $GITHUB_USERNAME ]; then
+		err "Variable GITHUB_USERNAME does not exist"
+		err "To view the help panel use the -h option."
 		exit 1
-	fi	
+	fi
+
+	if [ -z $GITHUB_TOKEN ]; then
+		err "Variable GITHUB_TOKEN does not exist"
+		err "To view the help panel use the -h option."
+		exit 1
+	fi
 }
 
 # Function to obtain all the repositories beginning with the COMMON_STRING variable from the user account
@@ -102,18 +102,18 @@ function getRepositories(){
 		REPOSITORIES_TO_REARRANGE=( "${REPOSITORIES_TO_REARRANGE[@]}" "$repo")
 	done < <(curl -s \
 	-H "Accept: application/vnd.github+json" \
-	-H "Authorization: Bearer $TOKEN" \
+	-H "Authorization: Bearer $GITHUB_TOKEN" \
 	-H "X-GitHub-Api-Version: 2022-11-28" \
-	https://api.github.com/users/${USERNAME}/repos${MORE_RESULTS} |
-	jq -r ".[] | .name" 2> /dev/null|
-	grep $COMMON_STRING)
+	https://api.github.com/users/${GITHUB_USERNAME}/repos${MORE_RESULTS} \
+	| jq -r ".[] | .name" 2> /dev/null \
+	| grep $COMMON_STRING)
 	if [ ${#REPOSITORIES_TO_REARRANGE[@]} -eq 0 ]; then 
-		echo "There has been a problem with the request to the GitHub api: "
+		err "GitHub api request failed: "
 		curl \
-        	-H "Accept: application/vnd.github+json" \
-        	-H "Authorization: Bearer $TOKEN" \
-        	-H "X-GitHub-Api-Version: 2022-11-28" \
-        	https://api.github.com/users/${USERNAME}/repos${MORE_RESULTS}
+			-H "Accept: application/vnd.github+json" \
+			-H "Authorization: Bearer $GITHUB_TOKEN" \
+			-H "X-GitHub-Api-Version: 2022-11-28" \
+			https://api.github.com/users/${GITHUB_USERNAME}/repos${MORE_RESULTS}
 		exit 1
 	fi
 
@@ -129,25 +129,25 @@ function renameRepositories(){
 	echo 
 	while true; do
 		read -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Do you want the repository names to be normalized by making them lowercase and changing hyphens to underscores?${endColour} [Y/n]: ")" yn
-    		case $yn in
-        		[Yy]* )	for repo in "${REPOSITORIES_TO_REARRANGE[@]}"; do 
+			case $yn in
+				[Yy]* )	for repo in "${REPOSITORIES_TO_REARRANGE[@]}"; do 
 					NEW_NAME=$(echo $repo | tr '[:upper:]' '[:lower:]' | sed "s/-/_/g") ;
 					if [ $repo != $NEW_NAME ]; then 
 						curl -s \
-						-X PATCH \
-						-H "Accept: application/vnd.github+json" \
-						-H "Authorization: Bearer $TOKEN" \
-						-H "X-GitHub-Api-Version: 2022-11-28" \
- 						-d '{ "name":"'"${NEW_NAME}"'" }' \
- 						https://api.github.com/repos/${USERNAME}/${repo} > /dev/null;
+							-X PATCH \
+							-H "Accept: application/vnd.github+json" \
+							-H "Authorization: Bearer $GITHUB_TOKEN" \
+							-H "X-GitHub-Api-Version: 2022-11-28" \
+							-d '{ "name":"'"${NEW_NAME}"'" }' \
+							https://api.github.com/repos/${GITHUB_USERNAME}/${repo} > /dev/null;
 					fi
 					REPOSITORIES_RENAMED=("${REPOSITORIES_RENAMED[@]}" "$NEW_NAME")
 				done
 
 				break;;
 			[Nn]* ) REPOSITORIES_RENAMED=("${REPOSITORIES_TO_REARRANGE[@]}"); break;;
-        		* ) echo "Please answer yes or no.";;
-    		esac
+				* ) echo "Please answer yes or no.";;
+			esac
 	done
 	clear 
 }
@@ -161,15 +161,15 @@ function checkSubarray(){
 	# Check if the arrays contains only integer numbers
 	for e in "${SUBARRAY[@]}"; do
 		if ! [[ $e =~ ^[0-9]+$ ]]; then
-			echo -e "${redColour}[!]${endColour} All characters must be integers separated by spaces."
-   			return 1
+			err "All characters must be integers separated by spaces."
+			return 1
 		fi
 	done
 
 	# Check if that numbers correspond with the index in the array
 	for index in "${SUBARRAY[@]}"; do
 		if ! [ ${ARRAY[$index]} ]; then
-			echo -e "${redColour}[!]${endColour} The possible numbers to enter are: ${!REPOSITORIES_RENAMED_COPY[@]}"
+			echo "The possible numbers to enter are: ${!REPOSITORIES_RENAMED_COPY[@]}"
 			return 1			
 		fi
 	done
@@ -249,19 +249,35 @@ function createRepository(){
 	read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter a name for the new repository: ${endColour}")" NEW_REPOSITORY_NAME
 	NEW_REPOSITORY_NAME=$(echo ${NEW_REPOSITORY_NAME} | sed 's/ /_/g')
 	read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter the description for the new repository: ${endColour}")" NEW_REPOSITORY_DESCRIPTION
+
 	curl -s \
-  	-X POST \
-  	-H "Accept: application/vnd.github+json" \
-  	-H "Authorization: Bearer $TOKEN"\
-  	-H "X-GitHub-Api-Version: 2022-11-28" \
-	https://api.github.com/user/repos \
-  	-d '{"name":"'"${NEW_REPOSITORY_NAME}"'","description":"'"$NEW_REPOSITORY_DESCRIPTION"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' > /dev/null
+		-X POST \
+		-H "Accept: application/vnd.github+json" \
+		-H "Authorization: Bearer $GITHUB_TOKEN"\
+		-H "X-GitHub-Api-Version: 2022-11-28" \
+		https://api.github.com/user/repos \
+		-d '{"name":"'"${NEW_REPOSITORY_NAME}"'","description":"'"$NEW_REPOSITORY_DESCRIPTION"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' > /dev/null
+
+	if [ $? -ne 0 ]; then 
+		err "GitHub api request failed: "
+		curl -s \
+			-X POST \
+			-H "Accept: application/vnd.github+json" \
+			-H "Authorization: Bearer $GITHUB_TOKEN"\
+			-H "X-GitHub-Api-Version: 2022-11-28" \
+			https://api.github.com/user/repos \
+			-d '{"name":"'"${NEW_REPOSITORY_NAME}"'","description":"'"$NEW_REPOSITORY_DESCRIPTION"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' > /dev/null
+		exit 1
+	fi
+
+
+
 }
 
 # Function to donwload the repositories
 function donwloadRepositories(){
 	cd ${0%/*}; cd ..
-	git clone https://github.com/${USERNAME}/${NEW_REPOSITORY_NAME} &> /dev/null
+	git clone https://github.com/${GITHUB_USERNAME}/${NEW_REPOSITORY_NAME} &> /dev/null
 	cd ${NEW_REPOSITORY_NAME}
 	echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} All the repositories will be downloaded following the chosen folder structure in the path $(pwd)${endColour}"
 	echo
@@ -270,7 +286,7 @@ function donwloadRepositories(){
 		echo -e "${turquoiseColour}${FOLDER_NAMES}_${folder}${endColour}"
 		for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do
 			echo -e "\tdownloading ${REPOSITORIES_RENAMED[${e}]}..."
-			git clone  https://github.com/${USERNAME}/${REPOSITORIES_RENAMED[${e}]} &> /dev/null
+			git clone  https://github.com/${GITHUB_USERNAME}/${REPOSITORIES_RENAMED[${e}]} &> /dev/null
 		done
 		echo
 		cd ..
@@ -298,11 +314,11 @@ function removeRepositories(){
 		case $ANSWER in
 			[Yy]*) for repo in "${REPOSITORIES_RENAMED[@]}"; do
 				curl \
-				-X DELETE \
-				-H "Accept: application/vnd.github+json" \
-				-H "Authorization: Bearer ${TOKEN}"\
-				-H "X-GitHub-Api-Version: 2022-11-28" \
-				https://api.github.com/repos/${USERNAME}/${repo}
+					-X DELETE \
+					-H "Accept: application/vnd.github+json" \
+					-H "Authorization: Bearer ${GITHUB_TOKEN}"\
+					-H "X-GitHub-Api-Version: 2022-11-28" \
+					https://api.github.com/repos/${GITHUB_USERNAME}/${repo}
 			done
 			break;;
 			[Nn]*) break ;; 
@@ -314,37 +330,40 @@ function removeRepositories(){
 }
 
 # Main function
-COMMON_STRING="lab"
-CONFIGFILE="./config.json"
-NUMBER_OF_FOLDERS=7
-FOLDER_NAMES="week"
-while getopts "hf:s:n:c:" arg; do
-	case "${arg}" in
-		h) helpPanel ;;
-		f) CONFIGFILE=$OPTARG ;; 
-		s) COMMON_STRING=$OPTARG ;;
-		n) NUMBER_OF_FOLDERS=$OPTARG ;;
-		c) FOLDER_NAMES=$OPTARG ;;
-	esac
-done
-dependencies
-getCredentials
-getRepositories
-renameRepositories
-echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Now is time to create the repository structure desired${endColour}"
-createJson
-while true; do       
-	echo
-	read -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Is the structure correct? [Y/n]: ${endColour}")" ANSWER
-	case $ANSWER in
-		[yY]*) clear; break ;;
-		[nN]*) clear         
-			echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is going to be repeated.${endColour}" 
-			createJson ;;
-		*) echo "Please answer yes or no" ;;
-	esac
-done
-createRepository
-donwloadRepositories
-uploadRepository
-removeRepositories
+function main(){
+	COMMON_STRING="lab"
+	CONFIGFILE="./config.json"
+	NUMBER_OF_FOLDERS=7
+	FOLDER_NAMES="week"
+	while getopts "hf:s:n:c:" arg; do
+		case "${arg}" in
+			h) helpPanel ;;
+			s) COMMON_STRING=$OPTARG ;;
+			n) NUMBER_OF_FOLDERS=$OPTARG ;;
+			c) FOLDER_NAMES=$OPTARG ;;
+		esac
+	done
+	dependencies
+	getCredentials
+	getRepositories
+	renameRepositories
+	echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Now is time to create the repository structure desired${endColour}"
+	createJson
+	while true; do       
+		echo
+		read -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Is the structure correct? [Y/n]: ${endColour}")" ANSWER
+		case $ANSWER in
+			[yY]*) clear; break ;;
+			[nN]*) clear         
+				echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is going to be repeated.${endColour}" 
+				createJson ;;
+			*) echo "Please answer yes or no" ;;
+		esac
+	done
+	createRepository
+	donwloadRepositories
+	uploadRepository
+	removeRepositories
+}
+
+main "$@"
