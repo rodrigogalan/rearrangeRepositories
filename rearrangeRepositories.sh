@@ -269,41 +269,42 @@ function createRepository(){
       -d '{"name":"'"${NEW_REPOSITORY_NAME}"'","description":"'"$NEW_REPOSITORY_DESCRIPTION"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' > /dev/null
     exit 1
   fi
-
-
-
 }
 
 # Function to donwload the repositories
 function donwloadRepositories(){
   cd ${0%/*}; cd ..
-  git clone https://github.com/${GITHUB_USERNAME}/${NEW_REPOSITORY_NAME} &> /dev/null
+  git clone --quiet https://github.com/${GITHUB_USERNAME}/${NEW_REPOSITORY_NAME}
   cd ${NEW_REPOSITORY_NAME}
   echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} All the repositories will be downloaded following the chosen folder structure in the path $(pwd)${endColour}"
   echo
   for ((folder=1; folder<=${NUMBER_OF_FOLDERS}; folder++)); do
     mkdir ${FOLDER_NAMES}_$folder; cd ${FOLDER_NAMES}_$folder
     echo -e "${turquoiseColour}${FOLDER_NAMES}_${folder}${endColour}"
-    for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do
-      echo -e "\tdownloading ${REPOSITORIES_RENAMED[${e}]}..."
-      git clone  https://github.com/${GITHUB_USERNAME}/${REPOSITORIES_RENAMED[${e}]} &> /dev/null
+    unset GIT_REPOSITORY
+    for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do 
+      GIT_REPOSITORY+=(https://github.com/${GITHUB_USERNAME}/${REPOSITORIES_RENAMED[${e}]})
     done
+    printf '\t%s\n' "${GIT_REPOSITORY[@]}"
+    wait
+    printf '%s\n' "${GIT_REPOSITORY[@]}" \
+    | xargs -I{} -P10 bash -c 'git clone --quiet --depth 1 --single-branch {}'
+    wait
     echo
     cd ..
   done
+  clear
 }
 
 # Function to upload the repository
 function uploadRepository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
-  echo "El directorio actual es $(pwd)"
-  sleep 5
+  echo "The repository is in the path $(pwd)"
   find -type d -path "./*/*/.git" -exec rm -rf {} +
   git add -A 
-  git commit -m "Initial commit" > /dev/null
-  echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} The total repository will be uploaded to the GitHub account...${endColour}"
-  git push &> /dev/null
-  clear
+  git commit --quiet -m "Initial commit"
+  echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} The total repository will pushed to the GitHub account...${endColour}"
+  git push
 }
 
 # Function to remove all the repositories from the GitHub account
@@ -313,6 +314,7 @@ function removeRepositories(){
     read -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Do you want to remove the rearranged repositories from your GitHub account? Is it recommended to check the new repository before accepting [Y/n]: ${endColour}")" ANSWER
     case $ANSWER in
       [Yy]*) for repo in "${REPOSITORIES_RENAMED[@]}"; do
+        echo "Removing $repo"
         curl \
           -X DELETE \
           -H "Accept: application/vnd.github+json" \
