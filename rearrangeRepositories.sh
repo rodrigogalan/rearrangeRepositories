@@ -334,12 +334,12 @@ function main(){
   COMMON_STRING="lab"
   NUMBER_OF_FOLDERS=7
   FOLDER_NAMES="week"
-  while getopts "hf:s:n:c:" arg; do
+  while getopts "hs:n:c:" arg; do
     case "${arg}" in
-      h) help_panel ;;
       s) COMMON_STRING=$OPTARG ;;
       n) NUMBER_OF_FOLDERS=$OPTARG ;;
       c) FOLDER_NAMES=$OPTARG ;;
+      h | *) help_panel ;;
     esac
   done
   readonly COMMON_STRING
