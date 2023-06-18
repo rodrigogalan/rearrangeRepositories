@@ -6,7 +6,6 @@ greenColour="\e[0;32m\033[1m"
 redColour="\e[0;31m\033[1m"
 blueColour="\e[0;34m\033[1m"
 yellowColour="\e[0;33m\033[1m"
-purpleColour="\e[0;35m\033[1m"
 turquoiseColour="\e[0;36m\033[1m"
 endColour="\033[0m\e[0m"
 
@@ -156,7 +155,6 @@ function rename_repositories(){
 function check_subarray(){
   local -n SUBARRAY=$1
   local -n ARRAY=$2
-  ARRAY_COPY=("${ARRAY[@]}")
 
   # Check if the arrays contains only integer numbers
   for e in "${SUBARRAY[@]}"; do
@@ -334,7 +332,6 @@ function remove_repositories(){
 # Main function
 function main(){
   COMMON_STRING="lab"
-  CONFIGFILE="./config.json"
   NUMBER_OF_FOLDERS=7
   FOLDER_NAMES="week"
   while getopts "hf:s:n:c:" arg; do
@@ -345,6 +342,9 @@ function main(){
       c) FOLDER_NAMES=$OPTARG ;;
     esac
   done
+  readonly COMMON_STRING
+  readonly NUMBER_OF_FOLDERS
+  readonly FOLDER_NAMES
   dependencies
   get_credentials
   get_repositories
