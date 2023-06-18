@@ -23,7 +23,7 @@ function err(){
 }
 
 # Function to print the help
-function helpPanel(){
+function help_panel(){
   cat <<EOF
 SYNOPSIS
   $(basename $0) [OPTION]...
@@ -80,7 +80,7 @@ function dependencies(){
 }
 
 # Function to get the github account credentials from config file
-function getCredentials(){
+function get_credentials(){
   if [ -z $GITHUB_USERNAME ]; then
     err "Variable GITHUB_USERNAME does not exist"
     err "To view the help panel use the -h option."
@@ -95,7 +95,7 @@ function getCredentials(){
 }
 
 # Function to obtain all the repositories beginning with the COMMON_STRING variable from the user account
-function getRepositories(){
+function get_repositories(){
   MORE_RESULTS="?page=1&per_page=100"
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} GitHub API requests are being performed......${endColour}"
   while read repo; do
@@ -124,7 +124,7 @@ function getRepositories(){
 }
 
 # Function to change name off all theese repos, deleting any possible space, changing "-" with "_" and lowering
-function renameRepositories(){
+function rename_repositories(){
   echo 
   echo 
   while true; do
@@ -153,7 +153,7 @@ function renameRepositories(){
 }
 
 # Function to check if an array is a subarray of another array
-function checkSubarray(){
+function check_subarray(){
   local -n SUBARRAY=$1
   local -n ARRAY=$2
   ARRAY_COPY=("${ARRAY[@]}")
@@ -177,7 +177,7 @@ function checkSubarray(){
 }
 
 # Function to create a json with the desired repository structure
-function createJson(){
+function create_json(){
   unset REPOSITORY_STRUCTURE
   declare -gA REPOSITORY_STRUCTURE
   echo
@@ -193,10 +193,10 @@ function createJson(){
       read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter the numbers associated with the repositories corresponding with the folder ${folder}: ${endColour}")" -a repos
 
       # Commands to verify whether the variables entered are correct or not
-      checkSubarray repos REPOSITORIES_RENAMED_COPY
+      check_subarray repos REPOSITORIES_RENAMED_COPY
       while (( $? )); do
         read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter from the beginning again the numbers associated with folder ${folder}: ${endColour}")" -a repos
-        checkSubarray repos REPOSITORIES_RENAMED_COPY
+        check_subarray repos REPOSITORIES_RENAMED_COPY
       done
 
       # Loop to remove already selected repositories
@@ -244,7 +244,7 @@ function createJson(){
 }
 
 # Function to create the new repository to store the other ones
-function createRepository(){
+function create_repository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} A new repository will be created to store the remaining${endColour}"
   read -p "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter a name for the new repository: ${endColour}")" NEW_REPOSITORY_NAME
   NEW_REPOSITORY_NAME=$(echo ${NEW_REPOSITORY_NAME} | sed 's/ /_/g')
@@ -272,7 +272,7 @@ function createRepository(){
 }
 
 # Function to donwload the repositories
-function donwloadRepositories(){
+function donwload_repositories(){
   cd ${0%/*}; cd ..
   git clone --quiet https://github.com/${GITHUB_USERNAME}/${NEW_REPOSITORY_NAME}
   cd ${NEW_REPOSITORY_NAME}
@@ -297,7 +297,7 @@ function donwloadRepositories(){
 }
 
 # Function to upload the repository
-function uploadRepository(){
+function upload_repository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
   echo "The repository is in the path $(pwd)"
   find -type d -path "./*/*/.git" -exec rm -rf {} +
@@ -308,7 +308,7 @@ function uploadRepository(){
 }
 
 # Function to remove all the repositories from the GitHub account
-function removeRepositories(){
+function remove_repositories(){
   while true; do
     echo
     read -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Do you want to remove the rearranged repositories from your GitHub account? Is it recommended to check the new repository before accepting [Y/n]: ${endColour}")" ANSWER
@@ -339,18 +339,18 @@ function main(){
   FOLDER_NAMES="week"
   while getopts "hf:s:n:c:" arg; do
     case "${arg}" in
-      h) helpPanel ;;
+      h) help_panel ;;
       s) COMMON_STRING=$OPTARG ;;
       n) NUMBER_OF_FOLDERS=$OPTARG ;;
       c) FOLDER_NAMES=$OPTARG ;;
     esac
   done
   dependencies
-  getCredentials
-  getRepositories
-  renameRepositories
+  get_credentials
+  get_repositories
+  rename_repositories
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Now is time to create the repository structure desired${endColour}"
-  createJson
+  create_json
   while true; do       
     echo
     read -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Is the structure correct? [Y/n]: ${endColour}")" ANSWER
@@ -358,14 +358,14 @@ function main(){
       [yY]*) clear; break ;;
       [nN]*) clear         
         echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is going to be repeated.${endColour}" 
-        createJson ;;
+        create_json ;;
       *) echo "Please answer yes or no" ;;
     esac
   done
-  createRepository
-  donwloadRepositories
-  uploadRepository
-  removeRepositories
+  create_repository
+  donwload_repositories
+  upload_repository
+  remove_repositories
 }
 
 main "$@"
