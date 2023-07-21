@@ -368,14 +368,23 @@ function main(){
   common_string="lab"
   number_of_folders=7
   folder_names="week"
-  while getopts "hs:n:c:" arg; do
+  while getopts ":hs:n:c:" arg; do
     case "${arg}" in
+      h) help_panel ;;
       s) common_string=$OPTARG ;;
       n) number_of_folders=$OPTARG ;;
       c) folder_names=$OPTARG ;;
-      h | *) help_panel ;;
+      :) 
+        err "${OPTARG} requires an argument"
+        help_panel
+        ;;
+      *) 
+        err "${OPTARG} invalid option"
+        help_panel
+        ;;
     esac
   done
+  shift "$((${OPTIND}-1))"
   readonly common_string
   readonly number_of_folders
   readonly folder_names
