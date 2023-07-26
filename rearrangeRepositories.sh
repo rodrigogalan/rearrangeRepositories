@@ -238,8 +238,8 @@ rename_repositories(){
 check_subarray(){
   local -n subarrays
   local -n array_total
-  -n subarrays=$1
-  -n array_total=$2
+  subarrays=$1
+  array_total=$2
 
   # Check if the arrays contains only integer numbers
   for subarray in "${subarrays[@]}"; do
@@ -461,12 +461,15 @@ remove_repositories(){
 
 # Main function
 main(){
+
   trap crtl_c INT
   trap '{ rm -f -- "$http_get_repository"; }' EXIT
   trap '{ rm -f -- "$http_change_repository_name"; }' EXIT 
   trap '{ rm -f -- "$http_create_repositoy"; }' EXIT
   trap '{ rm -f -- "$http_delete_repositoy"; }' EXIT
+
   clear
+
   COMMON_STRING="lab"
   NUMBER_OF_FOLDERS=7
   FOLDER_NAMES="week"
@@ -486,10 +489,11 @@ main(){
         ;;
     esac
   done
-  shift "$((${OPTIND}-1))"
+  shift "$((OPTIND-1))"
   readonly COMMON_STRING
   readonly NUMBER_OF_FOLDERS
   readonly FOLDER_NAMES
+
   dependencies
   check_credentials
   get_repositories
