@@ -3,12 +3,12 @@
 # Combine all GitHub repositories with a common name in one
 
 #Colours
-greenColour="\e[0;32m\033[1m"
-redColour="\e[0;31m\033[1m"
-blueColour="\e[0;34m\033[1m"
-yellowColour="\e[0;33m\033[1m"
-turquoiseColour="\e[0;36m\033[1m"
-endColour="\033[0m\e[0m"
+GREENCOLOUR="\e[0;32m\033[1m"
+REDCOLOUR="\e[0;31m\033[1m"
+BLUECOLOUR="\e[0;34m\033[1m"
+YELLOWCOLOUR="\e[0;33m\033[1m"
+TURQUOISECOLOUR="\e[0;36m\033[1m"
+ENDCOLOUR="\033[0m\e[0m"
 
 #######################################
 # End execution
@@ -31,7 +31,7 @@ crtl_c(){
 #   Error message in stderr
 #######################################
 err(){
-  echo -e "[$(date +"%m-%d-%Y %H:%M:%S")]: ${redColour}$*${endColour}" >&2
+  echo -e "[$(date +"%m-%d-%Y %H:%M:%S")]: ${REDCOLOUR}$*${ENDCOLOUR}" >&2
 }
 
 #######################################
@@ -82,16 +82,16 @@ dependencies(){
   local dependencies
   dependencies=(curl jq)
 
-  echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Checking the required programs...${endColour}"
+  echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Checking the required programs...${ENDCOLOUR}"
   
   for dependency in "${dependencies[@]}"; do
-    echo -ne "\n${yellowColour}[*]${endColour} Tool${blueColour} $dependency${endColour}..."
+    echo -ne "\n${YELLOWCOLOUR}[*]${ENDCOLOUR} Tool${BLUECOLOUR} $dependency${ENDCOLOUR}..."
 
     if [ -f "/usr/bin/$dependency" ]; then
-      echo -e " ${greenColour}(V)${endColour}"
+      echo -e " ${GREENCOLOUR}(V)${ENDCOLOUR}"
     else
-      echo -e " ${redColour}(X)${endColour}\n"
-      echo -e "${yellowColour}[*]${endColour} Instaling tool ${blueColour}$dependency${endColour}..."
+      echo -e " ${REDCOLOUR}(X)${ENDCOLOUR}\n"
+      echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR} Instaling tool ${BLUECOLOUR}$dependency${ENDCOLOUR}..."
       tput cnorm
       sudo apt-get install "$dependency" -y > /dev/null 2>&1
       if [[ $? != 0 ]]; then
@@ -144,7 +144,7 @@ get_repositories(){
   local more_results
   more_results="?page=1&per_page=100"
 
-  echo -e "${yellowColour}[*]${endColour}${turquoiseColour} GitHub API requests are being performed......${endColour}"
+  echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} GitHub API requests are being performed......${ENDCOLOUR}"
 
   http_get_repository=$(mktemp)
 
@@ -163,16 +163,16 @@ get_repositories(){
     exit 1
   fi
 
-  mapfile -t repositories_to_rearrange < <(jq -r ".[] | .name" <"$http_get_repository" 2> /dev/null \
-    | grep "$common_string")
+  mapfile -t REPOSITORIES_TO_REARRANGE < <(jq -r ".[] | .name" <"$http_get_repository" 2> /dev/null \
+    | grep "$COMMON_STRING")
 
-  if [ ${#repositories_to_rearrange[@]} -lt 1 ]; then 
-    err "There are no repositories in the account \"${GITHUB_USERNAME}\" with the string \"$common_string\""
+  if [ ${#REPOSITORIES_TO_REARRANGE[@]} -lt 1 ]; then 
+    err "There are no repositories in the account \"${GITHUB_USERNAME}\" with the string \"$COMMON_STRING\""
     exit 1
   fi
 
   echo -e "\nThe repositories to be rearranged are:\n"
-  printf '%s\n' "${repositories_to_rearrange[@]}"
+  printf '%s\n' "${REPOSITORIES_TO_REARRANGE[@]}"
 }
 
 #######################################
@@ -189,10 +189,10 @@ rename_repositories(){
   echo 
   echo 
   while true; do
-    read -rp "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Do you want the repository names to be normalized by making them lowercase and changing hyphens to underscores?${endColour} [Y/n]: ")" answer
+    read -rp "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Do you want the repository names to be normalized by making them lowercase and changing hyphens to underscores?${ENDCOLOUR} [Y/n]: ")" answer
       case $answer in
         [Yy]* )
-          for repository_to_rearrange in "${repositories_to_rearrange[@]}"; do 
+          for repository_to_rearrange in "${REPOSITORIES_TO_REARRANGE[@]}"; do 
             local new_name
             new_name=${repository_to_rearrange,,}; repository_to_rearrange=${repository_to_rearrange//-/_}
             if [ "$repository_to_rearrange" != "$new_name" ]; then
@@ -216,7 +216,7 @@ rename_repositories(){
               fi
             fi
           done
-          repositories_to_rearrange=( "${repositories_to_rearrange[@],,}" ); repositories_to_rearrange=( "${repositories_to_rearrange[@]//-/_}" )
+          REPOSITORIES_TO_REARRANGE=( "${REPOSITORIES_TO_REARRANGE[@],,}" ); REPOSITORIES_TO_REARRANGE=( "${REPOSITORIES_TO_REARRANGE[@]//-/_}" )
           break;;
 
         [Nn]* ) break;;
@@ -252,7 +252,7 @@ check_subarray(){
   # Check if that numbers correspond with the index in the array
   for subarray in "${subarrays[@]}"; do
     if ! [ "${array_total[$subarray]}" ]; then
-      err "The possible numbers to enter are: ${!repositories_to_rearrange_copy[*]}"
+      err "The possible numbers to enter are: ${!REPOSITORIES_TO_REARRANGE_COPY[*]}"
       return 1			
     fi
   done
@@ -267,39 +267,39 @@ check_subarray(){
 #   Associative array with the repository structure
 #######################################
 create_json(){
-  unset repository_structure
-  declare -gA repository_structure
+  unset REPOSITORY_STRUCTURE
+  declare -gA REPOSITORY_STRUCTURE
 
   echo -e "\nThe numbered list of repositories is:\n"
-  for repository_to_rearrange in "${!repositories_to_rearrange[@]}"; do
-    printf "\t%s  %s\n" "$repository_to_rearrange" "${repositories_to_rearrange[$repository_to_rearrange]}"
+  for repository_to_rearrange in "${!REPOSITORIES_TO_REARRANGE[@]}"; do
+    printf "\t%s  %s\n" "$repository_to_rearrange" "${REPOSITORIES_TO_REARRANGE[$repository_to_rearrange]}"
   done
 
-  repositories_to_rearrange_copy=("${repositories_to_rearrange[@]}")
-  while [ ${#repositories_to_rearrange_copy[@]} -gt 0 ]; do
-    for (( folder=1; folder<=number_of_folders; folder++ )); do
+  REPOSITORIES_TO_REARRANGE_COPY=("${REPOSITORIES_TO_REARRANGE[@]}")
+  while [ ${#REPOSITORIES_TO_REARRANGE_COPY[@]} -gt 0 ]; do
+    for (( folder=1; folder<=NUMBER_OF_FOLDERS; folder++ )); do
       echo
-      read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter the numbers associated with the repositories corresponding with the folder ${folder}: ${endColour}")" -a repositories_index
+      read -r -p "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Enter the numbers associated with the repositories corresponding with the folder ${folder}: ${ENDCOLOUR}")" -a repositories_index
 
       # Commands to verify whether the variables entered are correct or not
-      while ! check_subarray repositories_index repositories_to_rearrange_copy; do
-        read -r -p "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Enter from the beginning again the numbers associated with folder ${folder}: ${endColour}")" -a repositories_index
+      while ! check_subarray repositories_index REPOSITORIES_TO_REARRANGE_COPY; do
+        read -r -p "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Enter from the beginning again the numbers associated with folder ${folder}: ${ENDCOLOUR}")" -a repositories_index
       done
 
       # Loop to remove already selected repositories
       for repository_index in "${repositories_index[@]}"; do 
-        unset -v 'repositories_to_rearrange_copy[${repository_index}]'
+        unset -v 'REPOSITORIES_TO_REARRANGE_COPY[${repository_index}]'
       done
 
       # Commands to add the selected repositories to the structure
-      [[ -v repository_structure[${folder_names}_$folder] ]] && repository_structure[${folder_names}_$folder]+=" ${repositories_index[*]}"
-      [[ -v repository_structure[${folder_names}_$folder] ]] || repository_structure[${folder_names}_$folder]=${repositories_index[*]}
+      [[ -v REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder] ]] && REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]+=" ${repositories_index[*]}"
+      [[ -v REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder] ]] || REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]=${repositories_index[*]}
 
       # Conditionals to check if the process has finished
-      if [ ${#repositories_to_rearrange_copy[@]} -gt 0 ]; then
-        if [ "$folder" != "${number_of_folders}" ]; then
+      if [ ${#REPOSITORIES_TO_REARRANGE_COPY[@]} -gt 0 ]; then
+        if [ "$folder" != "${NUMBER_OF_FOLDERS}" ]; then
           echo "The remaining repositories are: "
-          printf '%s  ' "${!repositories_to_rearrange_copy[@]}"
+          printf '%s  ' "${!REPOSITORIES_TO_REARRANGE_COPY[@]}"
         fi
       else
         echo "There are no remaining repositories"
@@ -308,19 +308,19 @@ create_json(){
     done
 
     # Loop to loop back through the array if there are missing repositories or to terminate if there are not.
-    if [ ${#repositories_to_rearrange_copy[@]} -gt 0 ]; then
+    if [ ${#REPOSITORIES_TO_REARRANGE_COPY[@]} -gt 0 ]; then
       echo 
       echo "The remaining repositories to be added to the structure are: "
-      for repository_to_rearrange_copy in "${!repositories_to_rearrange_copy[@]}"; do 
+      for repository_to_rearrange_copy in "${!REPOSITORIES_TO_REARRANGE_COPY[@]}"; do 
         echo -n "$repository_to_rearrange_copy  "
       done
     else
       clear
-      echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is:${endColour}"
-      for ((folder=1; folder<=number_of_folders; folder++)); do
-        echo -e "\t${folder_names}_$folder →  "
-        for e in ${repository_structure[${folder_names}_$folder]}; do
-          echo -e "\t\t${repositories_to_rearrange[${e}]}"
+      echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} The structure is:${ENDCOLOUR}"
+      for ((folder=1; folder<=NUMBER_OF_FOLDERS; folder++)); do
+        echo -e "\t${FOLDER_NAMES}_$folder →  "
+        for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do
+          echo -e "\t\t${REPOSITORIES_TO_REARRANGE[${e}]}"
         done
         echo
       done
@@ -337,10 +337,10 @@ create_json(){
 #   None
 #######################################
 create_repository(){
-  echo -e "${yellowColour}[*]${endColour}${turquoiseColour} A new repository will be created to store the remaining${endColour}"
-  read -rp "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter a name for the new repository: ${endColour}")" new_repository_name
-  new_repository_name="${new_repository_name///_}"
-  read -rp "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter the description for the new repository: ${endColour}")" new_repository_description
+  echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} A new repository will be created to store the remaining${ENDCOLOUR}"
+  read -rp "$(echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Enter a name for the new repository: ${ENDCOLOUR}")" NEW_REPOSITORY_NAME
+  NEW_REPOSITORY_NAME="${NEW_REPOSITORY_NAME///_}"
+  read -rp "$(echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Enter the description for the new repository: ${ENDCOLOUR}")" new_repository_description
   
   http_create_repositoy=$(mktemp)
 
@@ -352,11 +352,11 @@ create_repository(){
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
-    -d '{"name":"'"${new_repository_name}"'","description":"'"$new_repository_description"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' \
+    -d '{"name":"'"${NEW_REPOSITORY_NAME}"'","description":"'"$new_repository_description"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' \
     "https://api.github.com/user/repos")
   
   if [ "$http_code" -ge 400 ]; then
-    err "The repository $new_repository_name could not be created"
+    err "The repository $NEW_REPOSITORY_NAME could not be created"
     cat "$http_create_repositoy"
     exit 1
   fi
@@ -373,17 +373,17 @@ create_repository(){
 #######################################
 donwload_repositories(){
   cd "${0%/*}"; cd ..
-  git clone --quiet "https://github.com/${GITHUB_USERNAME}/${new_repository_name}" || { err "There is already a repository called ${new_repository_name} in $(pwd)"; exit 1 ; }
-  cd "${new_repository_name}" || { err "The repository ${new_repository_name} did not download correctly"; exit 1; }
-  echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} All the repositories will be downloaded following the chosen folder structure in the path $(pwd)${endColour}"
+  git clone --quiet "https://github.com/${GITHUB_USERNAME}/${NEW_REPOSITORY_NAME}" || { err "There is already a repository called ${NEW_REPOSITORY_NAME} in $(pwd)"; exit 1 ; }
+  cd "${NEW_REPOSITORY_NAME}" || { err "The repository ${NEW_REPOSITORY_NAME} did not download correctly"; exit 1; }
+  echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} All the repositories will be downloaded following the chosen folder structure in the path $(pwd)${ENDCOLOUR}"
   echo
-    for ((folder=1; folder<=number_of_folders; folder++)); do
+    for ((folder=1; folder<=NUMBER_OF_FOLDERS; folder++)); do
       (
-      mkdir "${folder_names}"_"$folder"; cd "${folder_names}"_"$folder" || { err "failed to create change directory to ${folder_names}_$folder"; exit 1; }
-      echo -e "${turquoiseColour}${folder_names}_${folder}${endColour}"
+      mkdir "${FOLDER_NAMES}"_"$folder"; cd "${FOLDER_NAMES}"_"$folder" || { err "failed to create change directory to ${FOLDER_NAMES}_$folder"; exit 1; }
+      echo -e "${TURQUOISECOLOUR}${FOLDER_NAMES}_${folder}${ENDCOLOUR}"
       unset git_repository
-      for e in ${repository_structure[${folder_names}_$folder]}; do 
-        git_repository+=("https://github.com/${GITHUB_USERNAME}/${repositories_to_rearrange[${e}]}")
+      for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do 
+        git_repository+=("https://github.com/${GITHUB_USERNAME}/${REPOSITORIES_TO_REARRANGE[${e}]}")
       done
       printf '\t%s\n' "${git_repository[@]}"
       wait
@@ -405,12 +405,12 @@ donwload_repositories(){
 #   None
 #######################################
 upload_repository(){
-  echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
+  echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} All git logs will be removed from the repositories...${ENDCOLOUR}"
   echo "The repository is in the path $(pwd)"
   find . -type d -path "./*/*/.git" -exec rm -rf {} +
   git add -A 
   git commit --quiet -m "Initial commit" || err ""
-  echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} The total repository will pushed to the GitHub account...${endColour}"
+  echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} The total repository will pushed to the GitHub account...${ENDCOLOUR}"
   git push
 }
 
@@ -425,10 +425,10 @@ upload_repository(){
 remove_repositories(){
   while true; do
     echo
-    read -rp "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Do you want to remove the rearranged repositories from your GitHub account? Is it recommended to check the new repository before accepting [Y/n]: ${endColour}")" answer
+    read -rp "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Do you want to remove the rearranged repositories from your GitHub account? Is it recommended to check the new repository before accepting [Y/n]: ${ENDCOLOUR}")" answer
     case $answer in
       [Yy]*) 
-        for repository_to_rearrange in "${repositories_to_rearrange[@]}"; do
+        for repository_to_rearrange in "${REPOSITORIES_TO_REARRANGE[@]}"; do
           echo "Removing $repository_to_rearrange"
           http_delete_repositoy=$(mktemp)
 
@@ -467,15 +467,15 @@ main(){
   trap '{ rm -f -- "$http_create_repositoy"; }' EXIT
   trap '{ rm -f -- "$http_delete_repositoy"; }' EXIT
   clear
-  common_string="lab"
-  number_of_folders=7
-  folder_names="week"
+  COMMON_STRING="lab"
+  NUMBER_OF_FOLDERS=7
+  FOLDER_NAMES="week"
   while getopts ":hs:n:c:" arg; do
     case "${arg}" in
       h) help_panel ;;
-      s) common_string=$OPTARG ;;
-      n) number_of_folders=$OPTARG ;;
-      c) folder_names=$OPTARG ;;
+      s) COMMON_STRING=$OPTARG ;;
+      n) NUMBER_OF_FOLDERS=$OPTARG ;;
+      c) FOLDER_NAMES=$OPTARG ;;
       :) 
         err "${OPTARG} requires an argument"
         help_panel
@@ -487,22 +487,22 @@ main(){
     esac
   done
   shift "$((${OPTIND}-1))"
-  readonly common_string
-  readonly number_of_folders
-  readonly folder_names
+  readonly COMMON_STRING
+  readonly NUMBER_OF_FOLDERS
+  readonly FOLDER_NAMES
   dependencies
   check_credentials
   get_repositories
   rename_repositories
-  echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Now is time to create the repository structure desired${endColour}"
+  echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Now is time to create the repository structure desired${ENDCOLOUR}"
   create_json
   while true; do       
     echo
-    read -rp "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Is the structure correct? [Y/n]: ${endColour}")" answer
+    read -rp "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Is the structure correct? [Y/n]: ${ENDCOLOUR}")" answer
     case $answer in
       [yY]*) clear; break ;;
       [nN]*) clear         
-        echo -e "${yellowColour}[*]${endColour}${turquoiseColour} The structure is going to be repeated.${endColour}" 
+        echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} The structure is going to be repeated.${ENDCOLOUR}" 
         create_json ;;
       *) echo "Please answer yes or no" ;;
     esac
