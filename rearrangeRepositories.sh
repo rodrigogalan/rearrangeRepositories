@@ -55,7 +55,8 @@ EOF
 dependencies(){
   tput civis
   clear
-  local dependencies=(curl jq)
+  local dependencies
+  dependencies=(curl jq)
 
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Checking the required programs...${endColour}"
   
@@ -98,7 +99,8 @@ get_credentials(){
 
 # Function to obtain all the repositories beginning with the common_string variable from the user account
 get_repositories(){
-  local more_results="?page=1&per_page=100"
+  local more_results
+  more_results="?page=1&per_page=100"
 
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} GitHub API requests are being performed......${endColour}"
 
@@ -176,8 +178,10 @@ rename_repositories(){
 
 # Function to check if an array is a subarray of another array
 check_subarray(){
-  local -n subarrays=$1
-  local -n array_total=$2
+  local -n subarrays
+  local -n array_total
+  -n subarrays=$1
+  -n array_total=$2
 
   # Check if the arrays contains only integer numbers
   for subarray in "${subarrays[@]}"; do
