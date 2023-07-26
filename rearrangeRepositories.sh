@@ -14,18 +14,18 @@ endColour="\033[0m\e[0m"
 
 trap crtl_c INT
 
-function crtl_c(){
+crtl_c(){
   err Ending...
   tput cnorm
   exit 1
 }
 
-function err(){
+err(){
   echo -e "[$(date +"%m-%d-%Y %H:%M:%S")]: ${redColour}$*${endColour}" >&2
 }
 
 # Function to print the help
-function help_panel(){
+help_panel(){
   cat <<EOF
 SYNOPSIS
   $(basename "$0") [OPTION]...
@@ -52,7 +52,7 @@ EOF
 }
 
 # Function to check for necessary dependencies
-function dependencies(){
+dependencies(){
   tput civis
   clear
   local dependencies=(curl jq)
@@ -82,7 +82,7 @@ function dependencies(){
 }
 
 # Function to get the github account credentials from config file
-function get_credentials(){
+get_credentials(){
   if [ -z "$GITHUB_USERNAME" ]; then
     err "Variable GITHUB_USERNAME does not exist"
     err "To view the help panel use the -h option."
@@ -97,7 +97,7 @@ function get_credentials(){
 }
 
 # Function to obtain all the repositories beginning with the common_string variable from the user account
-function get_repositories(){
+get_repositories(){
   local more_results="?page=1&per_page=100"
 
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} GitHub API requests are being performed......${endColour}"
@@ -132,7 +132,7 @@ function get_repositories(){
 }
 
 # Function to change name off all theese repos, deleting any possible space, changing "-" with "_" and lowering
-function rename_repositories(){
+rename_repositories(){
   echo 
   echo 
   while true; do
@@ -175,7 +175,7 @@ function rename_repositories(){
 }
 
 # Function to check if an array is a subarray of another array
-function check_subarray(){
+check_subarray(){
   local -n subarrays=$1
   local -n array_total=$2
 
@@ -198,7 +198,7 @@ function check_subarray(){
 }
 
 # Function to create a json with the desired repository structure
-function create_json(){
+create_json(){
   unset repository_structure
   declare -gA repository_structure
 
@@ -261,7 +261,7 @@ function create_json(){
 }
 
 # Function to create the new repository to store the other ones
-function create_repository(){
+create_repository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} A new repository will be created to store the remaining${endColour}"
   read -rp "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter a name for the new repository: ${endColour}")" new_repository_name
   new_repository_name="${new_repository_name///_}"
@@ -289,7 +289,7 @@ function create_repository(){
 
 
 # Function to donwload the repositories
-function donwload_repositories(){
+donwload_repositories(){
   cd "${0%/*}"; cd ..
   git clone --quiet "https://github.com/${GITHUB_USERNAME}/${new_repository_name}" || { err "There is already a repository called ${new_repository_name} in $(pwd)"; exit 1 ; }
   cd "${new_repository_name}" || { err "The repository ${new_repository_name} did not download correctly"; exit 1; }
@@ -315,7 +315,7 @@ function donwload_repositories(){
 }
 
 # Function to upload the repository
-function upload_repository(){
+upload_repository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
   echo "The repository is in the path $(pwd)"
   find . -type d -path "./*/*/.git" -exec rm -rf {} +
@@ -326,7 +326,7 @@ function upload_repository(){
 }
 
 # Function to remove all the repositories from the GitHub account
-function remove_repositories(){
+remove_repositories(){
   while true; do
     echo
     read -rp "$(echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Do you want to remove the rearranged repositories from your GitHub account? Is it recommended to check the new repository before accepting [Y/n]: ${endColour}")" answer
@@ -364,7 +364,7 @@ function remove_repositories(){
 }
 
 # Main function
-function main(){
+main(){
   common_string="lab"
   number_of_folders=7
   folder_names="week"
