@@ -14,17 +14,39 @@ endColour="\033[0m\e[0m"
 
 trap crtl_c INT
 
+#######################################
+# End execution
+# Arguments:
+#   None
+# Return:
+#   Return 1
+#######################################
 crtl_c(){
   err Ending...
   tput cnorm
   exit 1
 }
 
+#######################################
+# Creates an error message
+# Arguments:
+#   None
+# Outputs:
+#   Error message in stderr
+#######################################
 err(){
   echo -e "[$(date +"%m-%d-%Y %H:%M:%S")]: ${redColour}$*${endColour}" >&2
 }
 
-# Function to print the help
+#######################################
+# Show the help panel
+# Arguments:
+#   None
+# Outputs:
+#   Show help panel
+# Return:
+#   Return 0
+#######################################
 help_panel(){
   cat <<EOF
 SYNOPSIS
@@ -51,7 +73,13 @@ EOF
   exit 0
 }
 
-# Function to check for necessary dependencies
+#######################################
+# Check necessary dependencies
+# Arguments:
+#   None
+# Returns:
+#   0 if dependency is installed, non-zero on error.
+#######################################
 dependencies(){
   tput civis
   clear
@@ -82,8 +110,17 @@ dependencies(){
   clear
 }
 
-# Function to get the github account credentials from config file
-get_credentials(){
+#######################################
+# Check if github account credentials are defined
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+# Returns:
+#   0 if credentials exist, non-zero if not.
+#######################################
+check_credentials(){
   if [ -z "$GITHUB_USERNAME" ]; then
     err "Variable GITHUB_USERNAME does not exist"
     err "To view the help panel use the -h option."
@@ -97,7 +134,16 @@ get_credentials(){
   fi
 }
 
-# Function to obtain all the repositories beginning with the common_string variable from the user account
+#######################################
+# Get all the repositories beginning with the common_string variable from the user account
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+# Outputs:
+#   List with the repositories
+#######################################
 get_repositories(){
   local more_results
   more_results="?page=1&per_page=100"
@@ -133,7 +179,16 @@ get_repositories(){
   printf '%s\n' "${repositories_to_rearrange[@]}"
 }
 
-# Function to change name off all theese repos, deleting any possible space, changing "-" with "_" and lowering
+#######################################
+# Rename repos, deleting any possible space, changing "-" with "_" and lowering
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+# Outputs:
+#   List with the repositories renamed
+#######################################
 rename_repositories(){
   echo 
   echo 
@@ -176,7 +231,14 @@ rename_repositories(){
   clear 
 }
 
-# Function to check if an array is a subarray of another array
+#######################################
+# Check if an array is a subarray of another array
+# Arguments:
+#   Subarray
+#   Array
+# Returns:
+#   0 if subarray is part of array, non-zero if not.
+#######################################
 check_subarray(){
   local -n subarrays
   local -n array_total
@@ -201,7 +263,13 @@ check_subarray(){
   return 0
 }
 
-# Function to create a json with the desired repository structure
+#######################################
+# Create a json with the desired repository structure
+# Arguments:
+#   None
+# Outputs:
+#   Associative array with the repository structure
+#######################################
 create_json(){
   unset repository_structure
   declare -gA repository_structure
@@ -264,7 +332,14 @@ create_json(){
   done
 }
 
-# Function to create the new repository to store the other ones
+#######################################
+# Create the new repository to store the other ones
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+#######################################
 create_repository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} A new repository will be created to store the remaining${endColour}"
   read -rp "$(echo -e "\n${yellowColour}[*]${endColour}${turquoiseColour} Enter a name for the new repository: ${endColour}")" new_repository_name
@@ -292,7 +367,14 @@ create_repository(){
 }
 
 
-# Function to donwload the repositories
+#######################################
+# Donwload the repositories
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+#######################################
 donwload_repositories(){
   cd "${0%/*}"; cd ..
   git clone --quiet "https://github.com/${GITHUB_USERNAME}/${new_repository_name}" || { err "There is already a repository called ${new_repository_name} in $(pwd)"; exit 1 ; }
@@ -318,7 +400,14 @@ donwload_repositories(){
   clear
 }
 
-# Function to upload the repository
+#######################################
+# Upload the repository
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+#######################################
 upload_repository(){
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} All git logs will be removed from the repositories...${endColour}"
   echo "The repository is in the path $(pwd)"
@@ -329,7 +418,14 @@ upload_repository(){
   git push
 }
 
-# Function to remove all the repositories from the GitHub account
+#######################################
+# Remove all the repositories from the GitHub account
+# Globals:
+#   GITHUB_USERNAME
+#   GITHUB_TOKEN
+# Arguments:
+#   None
+#######################################
 remove_repositories(){
   while true; do
     echo
@@ -393,7 +489,7 @@ main(){
   readonly number_of_folders
   readonly folder_names
   dependencies
-  get_credentials
+  check_credentials
   get_repositories
   rename_repositories
   echo -e "${yellowColour}[*]${endColour}${turquoiseColour} Now is time to create the repository structure desired${endColour}"
