@@ -2,8 +2,6 @@
 #
 # Combine all GitHub repositories with a common name in one
 
-clear
-
 #Colours
 greenColour="\e[0;32m\033[1m"
 redColour="\e[0;31m\033[1m"
@@ -11,8 +9,6 @@ blueColour="\e[0;34m\033[1m"
 yellowColour="\e[0;33m\033[1m"
 turquoiseColour="\e[0;36m\033[1m"
 endColour="\033[0m\e[0m"
-
-trap crtl_c INT
 
 #######################################
 # End execution
@@ -465,6 +461,12 @@ remove_repositories(){
 
 # Main function
 main(){
+  trap crtl_c INT
+  trap '{ rm -f -- "$http_get_repository"; }' EXIT
+  trap '{ rm -f -- "$http_change_repository_name"; }' EXIT 
+  trap '{ rm -f -- "$http_create_repositoy"; }' EXIT
+  trap '{ rm -f -- "$http_delete_repositoy"; }' EXIT
+  clear
   common_string="lab"
   number_of_folders=7
   folder_names="week"
@@ -509,10 +511,6 @@ main(){
   donwload_repositories
   upload_repository
   remove_repositories
-  trap '{ rm -f -- "$http_get_repository"; }' EXIT
-  trap '{ rm -f -- "$http_change_repository_name"; }' EXIT 
-  trap '{ rm -f -- "$http_create_repositoy"; }' EXIT
-  trap '{ rm -f -- "$http_delete_repositoy"; }' EXIT
 }
 
 main "$@"
