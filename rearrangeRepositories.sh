@@ -18,6 +18,7 @@ ENDCOLOUR="\033[0m\e[0m"
 #   Return 1
 #######################################
 crtl_c(){
+  echo
   err Ending...
   tput cnorm
   exit 1
@@ -136,11 +137,12 @@ check_credentials(){
 #   GITHUB_USERNAME
 #   GITHUB_TOKEN
 # Arguments:
-#   None
+#   repositories: array with the repositories
 # Outputs:
 #   List with the repositories
 #######################################
 get_repositories(){
+  local -n repositories=$1
   local more_results
   more_results="?page=1&per_page=100"
 
@@ -163,16 +165,16 @@ get_repositories(){
     exit 1
   fi
 
-  mapfile -t REPOSITORIES_TO_REARRANGE < <(jq -r ".[] | .name" <"$http_get_repository" 2> /dev/null \
+  mapfile -t repositories < <(jq -r ".[] | .name" <"$http_get_repository" 2> /dev/null \
     | grep "$COMMON_STRING")
 
-  if [ ${#REPOSITORIES_TO_REARRANGE[@]} -lt 1 ]; then 
+  if [ ${#repositories[@]} -lt 1 ]; then 
     err "There are no repositories in the account \"${GITHUB_USERNAME}\" with the string \"$COMMON_STRING\""
     exit 1
   fi
 
   echo -e "\nThe repositories to be rearranged are:\n"
-  printf '%s\n' "${REPOSITORIES_TO_REARRANGE[@]}"
+  printf '%s\n' "${repositories[@]}"
 }
 
 #######################################
@@ -496,7 +498,7 @@ main(){
 
   dependencies
   check_credentials
-  get_repositories
+  get_repositories REPOSITORIES_TO_REARRANGE
   rename_repositories
   echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Now is time to create the repository structure desired${ENDCOLOUR}"
   create_json
