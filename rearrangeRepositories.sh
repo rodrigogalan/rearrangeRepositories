@@ -159,7 +159,7 @@ get_repositories(){
 
   if [ "$http_code" -ge 400 ]; then
     err "GitHub api request failed: "
-    cat "$http_get_repository"
+    cat "$http_get_repository" >&2 
     exit 1
   fi
 
@@ -211,7 +211,7 @@ rename_repositories(){
 
               if [ "$http_code" -ge 400 ]; then
                 err "The repository $repository_to_rearrange could not be renamed: "
-                cat "$http_change_repository_name"
+                cat "$http_change_repository_name" >&2
                 exit 1
               fi
             fi
@@ -357,7 +357,7 @@ create_repository(){
   
   if [ "$http_code" -ge 400 ]; then
     err "The repository $NEW_REPOSITORY_NAME could not be created"
-    cat "$http_create_repositoy"
+    cat "$http_create_repositoy" >&2 
     exit 1
   fi
 }
@@ -444,7 +444,7 @@ remove_repositories(){
 
           if [ "$http_code" -ge 400 ]; then
             err "The repository $repository_to_rearrange could not be removed"
-            cat "$http_delete_repositoy"
+            cat "$http_delete_repositoy" >&2
             exit 1
           fi
         done
