@@ -2,7 +2,7 @@
 #
 # Combine all GitHub repositories with a common name in one
 
-# Avoid unset variables 
+# Avoid unset variables
 # set -u
 
 # Trap commmands
@@ -90,7 +90,7 @@ dependencies(){
   dependencies=(curl jq)
 
   echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Checking the required programs...${ENDCOLOUR}"
-  
+
   for dependency in "${dependencies[@]}"; do
     echo -ne "\n${YELLOWCOLOUR}[*]${ENDCOLOUR} Tool${BLUECOLOUR} $dependency${ENDCOLOUR}..."
 
@@ -171,14 +171,14 @@ get_repositories(){
 
   if [ "$http_code" -ge 400 ]; then
     err "GitHub api request failed: "
-    cat "$http_get_repository" >&2 
+    cat "$http_get_repository" >&2
     exit 1
   fi
 
   mapfile -t repositories < <(jq -r ".[] | .name" <"$http_get_repository" 2> /dev/null \
     | grep "$COMMON_STRING")
 
-  if [ ${#repositories[@]} -lt 1 ]; then 
+  if [ ${#repositories[@]} -lt 1 ]; then
     err "There are no repositories in the account \"${GITHUB_USERNAME}\" with the string \"$COMMON_STRING\""
     exit 1
   fi
@@ -198,7 +198,7 @@ get_repositories(){
 #   List with the repositories renamed
 #######################################
 rename_repositories(){
-  echo 
+  echo
   echo
   local -n repositories
   repositories=$1
@@ -208,13 +208,13 @@ rename_repositories(){
     read -rp "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Do you want the repository names to be normalized by making them lowercase and changing hyphens to underscores?${ENDCOLOUR} [Y/n]: ")" answer
       case $answer in
         [Yy]* )
-          for repository_to_rearrange in "${repositories[@]}"; do 
+          for repository_to_rearrange in "${repositories[@]}"; do
             new_name=${repository_to_rearrange,,}; repository_to_rearrange=${repository_to_rearrange//-/_}
             if [ "$repository_to_rearrange" != "$new_name" ]; then
 
               local http_change_repository_name
               http_change_repository_name=$(mktemp)
-              trap '{ rm -f -- "$http_change_repository_name"; }' EXIT 
+              trap '{ rm -f -- "$http_change_repository_name"; }' EXIT
 
               local http_code
               http_code=$(curl -sL \
@@ -242,7 +242,7 @@ rename_repositories(){
         * ) echo "Please answer yes or no.";;
       esac
   done
-  clear 
+  clear
 }
 
 #######################################
@@ -271,7 +271,7 @@ check_subarray(){
   for subarray in "${subarrays[@]}"; do
     if ! [ "${array_total[$subarray]}" ]; then
       err "The possible numbers to enter are: ${!array_total[*]}"
-      return 1			
+      return 1
     fi
   done
   return 0
@@ -309,7 +309,7 @@ create_json(){
       done
 
       # Loop to remove already selected repositories
-      for repository_index in "${repositories_index[@]}"; do 
+      for repository_index in "${repositories_index[@]}"; do
         unset -v 'repositories_copy[${repository_index}]'
       done
 
@@ -331,9 +331,9 @@ create_json(){
 
     # Loop to loop back through the array if there are missing repositories or to terminate if there are not.
     if [ ${#repositories_copy[@]} -gt 0 ]; then
-      echo 
+      echo
       echo "The remaining repositories to be added to the structure are: "
-      for repository_to_rearrange_copy in "${!repositories_copy[@]}"; do 
+      for repository_to_rearrange_copy in "${!repositories_copy[@]}"; do
         echo -n "$repository_to_rearrange_copy  "
       done
     else
@@ -366,7 +366,7 @@ create_repository(){
   read -rp "$(echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Enter a name for the new repository: ${ENDCOLOUR}")" new_repository_name
   new_repository_name="${new_repository_name// /_}"
   read -rp "$(echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Enter the description for the new repository: ${ENDCOLOUR}")" new_repository_description
-  
+
   local http_create_repositoy
   http_create_repositoy=$(mktemp)
   trap '{ rm -f -- "$http_create_repositoy"; }' EXIT
@@ -381,10 +381,10 @@ create_repository(){
     -H "X-GitHub-Api-Version: 2022-11-28" \
     -d '{"name":"'"${new_repository_name}"'","description":"'"$new_repository_description"'","homepage":"https://github.com","private":false,"has_issues":true,"has_projects":true,"has_wiki":true}' \
     "https://api.github.com/user/repos")
-  
+
   if [ "$http_code" -ge 400 ]; then
     err "The repository $new_repository_name could not be created"
-    cat "$http_create_repositoy" >&2 
+    cat "$http_create_repositoy" >&2
     exit 1
   fi
 }
@@ -415,7 +415,7 @@ donwload_repositories(){
       mkdir "${FOLDER_NAMES}"_"$folder"; cd "${FOLDER_NAMES}"_"$folder" || { err "failed to create change directory to ${FOLDER_NAMES}_$folder"; exit 1; }
       echo -e "${TURQUOISECOLOUR}${FOLDER_NAMES}_${folder}${ENDCOLOUR}"
       unset git_repository
-      for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do 
+      for e in ${REPOSITORY_STRUCTURE[${FOLDER_NAMES}_$folder]}; do
         git_repository+=("https://github.com/${GITHUB_USERNAME}/${repositories[${e}]}")
       done
       printf '\t%s\n' "${git_repository[@]}"
@@ -441,7 +441,7 @@ upload_repository(){
   echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} All git logs will be removed from the repositories...${ENDCOLOUR}"
   echo "The repository is in the path $(pwd)"
   find . -type d -path "./*/*/.git" -exec rm -rf {} +
-  git add -A 
+  git add -A
   git commit --quiet -m "Initial commit" || { err "The git commit did not success "; return 1; }
   echo -e "\n${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} The total repository will pushed to the GitHub account...${ENDCOLOUR}"
   git push
@@ -463,7 +463,7 @@ remove_repositories(){
     echo
     read -rp "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Do you want to remove the rearranged repositories from your GitHub account? Is it recommended to check the new repository before accepting [Y/n]: ${ENDCOLOUR}")" answer
     case $answer in
-      [Yy]*) 
+      [Yy]*)
         for repository_to_rearrange in "${repositories[@]}"; do
           echo "Removing $repository_to_rearrange"
 
@@ -511,11 +511,11 @@ main(){
       s) COMMON_STRING=$OPTARG ;;
       n) NUMBER_OF_FOLDERS=$OPTARG ;;
       c) FOLDER_NAMES=$OPTARG ;;
-      :) 
+      :)
         err "${OPTARG} requires an argument"
         help_panel
         ;;
-      *) 
+      *)
         err "${OPTARG} invalid option"
         help_panel
         ;;
@@ -534,13 +534,13 @@ main(){
   readonly REPOSITORIES_TO_REARRANGE
   echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Now is time to create the repository structure desired${ENDCOLOUR}"
   create_json REPOSITORY_STRUCTURE REPOSITORIES_TO_REARRANGE
-  while true; do       
+  while true; do
     echo
     read -rp "$(echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} Is the structure correct? [Y/n]: ${ENDCOLOUR}")" answer
     case $answer in
       [yY]*) clear; break ;;
-      [nN]*) clear         
-        echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} The structure is going to be repeated.${ENDCOLOUR}" 
+      [nN]*) clear
+        echo -e "${YELLOWCOLOUR}[*]${ENDCOLOUR}${TURQUOISECOLOUR} The structure is going to be repeated.${ENDCOLOUR}"
         unset REPOSITORY_STRUCTURE
         create_json REPOSITORY_STRUCTURE REPOSITORIES_TO_REARRANGE ;;
       *) echo "Please answer yes or no" ;;
